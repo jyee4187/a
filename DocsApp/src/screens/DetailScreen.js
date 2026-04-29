@@ -8,51 +8,82 @@ import {
 
 function renderContent(content) {
   const lines = content.split('\n');
-  return lines.map((line, index) => {
+  const elements = [];
+  let inCodeBlock = false;
+  let codeLines = [];
+  let codeBlockKey = null;
+
+  lines.forEach((line, index) => {
+    if (line.startsWith('```')) {
+      if (!inCodeBlock) {
+        inCodeBlock = true;
+        codeLines = [];
+        codeBlockKey = index;
+      } else {
+        inCodeBlock = false;
+        elements.push(
+          <View key={codeBlockKey} style={styles.codeBlock}>
+            <Text style={styles.codeText}>{codeLines.join('\n')}</Text>
+          </View>,
+        );
+        codeLines = [];
+        codeBlockKey = null;
+      }
+      return;
+    }
+
+    if (inCodeBlock) {
+      codeLines.push(line);
+      return;
+    }
+
     if (line.startsWith('# ')) {
-      return (
+      elements.push(
         <Text key={index} style={styles.h1}>
           {line.slice(2)}
-        </Text>
+        </Text>,
       );
+      return;
     }
     if (line.startsWith('## ')) {
-      return (
+      elements.push(
         <Text key={index} style={styles.h2}>
           {line.slice(3)}
-        </Text>
+        </Text>,
       );
+      return;
     }
     if (line.startsWith('### ')) {
-      return (
+      elements.push(
         <Text key={index} style={styles.h3}>
           {line.slice(4)}
-        </Text>
+        </Text>,
       );
+      return;
     }
-    if (line.startsWith('```')) {
-      return null;
-    }
-    if (line.startsWith('- ') || line.startsWith('1.') || line.match(/^\d+\./)) {
-      return (
+    if (line.startsWith('- ') || line.match(/^\d+\./)) {
+      elements.push(
         <Text key={index} style={styles.listItem}>
           {line}
-        </Text>
+        </Text>,
       );
+      return;
     }
     if (line.startsWith('|')) {
-      return (
+      elements.push(
         <Text key={index} style={styles.tableRow}>
           {line}
-        </Text>
+        </Text>,
       );
+      return;
     }
     if (line.trim() === '' || line.trim() === '---') {
-      return <View key={index} style={styles.spacer} />;
+      elements.push(<View key={index} style={styles.spacer} />);
+      return;
     }
     const parts = line.split(/(\*\*[^*]+\*\*|`[^`]+`)/);
     if (parts.length > 1) {
-      return (
+      elements.push(
         <Text key={index} style={styles.paragraph}>
           {parts.map((part, i) => {
             if (part.startsWith('**') && part.endsWith('**')) {
@@ -71,15 +102,18 @@ function renderContent(content) {
             }
             return part;
           })}
-        </Text>
+        </Text>,
       );
+      return;
     }
-    return (
+    elements.push(
       <Text key={index} style={styles.paragraph}>
         {line}
-      </Text>
+      </Text>,
     );
   });
+
+  return elements;
 }
 
 export default function DetailScreen({ route }) {
